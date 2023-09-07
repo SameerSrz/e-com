@@ -1,0 +1,238 @@
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate, useParams } from 'react-router-dom'
+import { categoriesData } from '../../Static/Data'
+import { AiOutlinePlusCircle } from 'react-icons/ai'
+import { toast } from 'react-toastify'
+import { createProduct, getAllProducts } from '../../redux/action/product'
+import Loader from '../../Loader'
+import axios from 'axios'
+import { server } from '../../server'
+
+const UpdateOrder = () => {
+    const {seller} = useSelector((state)=>state.seller)
+    const {isLoading,success,error} = useSelector((state)=>state.products)
+    const {products} = useSelector((state)=>state.products);
+    const {id} = useParams();
+    console.log(id)
+    // const [product,setProduct] = useState()
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(getAllProducts(seller._id))
+    
+            if (error) {
+              toast.error(error);
+            }
+            if (success) {
+              toast.success("Product created successfully!");
+              navigate("/dashboard");
+              window.location.reload();
+            }
+          }, [dispatch, error, success,navigate]);
+        //   console.log(products)
+        const product = products && products.filter((item) => item._id === id);
+
+          console.log(product)
+
+    const [images,setImages] = useState([]);
+    const [name,setName] = useState(product[0]?.name);
+    const [description,setDescription] = useState(product[0]?.description);
+    const [category,setCategory] = useState("");
+    const [tags,setTags] = useState(product[0]?.tags);
+    const [orignalPrice,setOrignalPrice] = useState(product[0]?.originalPrice);
+    const [discountPrice,setDiscountPrice] = useState(product[0]?.discountPrice)
+    const [stock,setStock] = useState(product[0]?.stock);
+    
+      const handleImageChange = (e) => {
+        e.preventDefault();
+    
+        let files = Array.from(e.target.files);
+        setImages((prevImages) => [...prevImages, ...files]);
+      };
+    
+      console.log(images);
+    
+      const handleSubmit = (e) => {
+        e.preventDefault();
+    
+        const newForm = new FormData();
+    
+        images.forEach((image) => {
+          newForm.append("images", image);
+        });
+        newForm.append("name", name);
+        newForm.append("description", description);
+        newForm.append("category", category);
+        newForm.append("tags", tags);
+        newForm.append("originalPrice", orignalPrice);
+        newForm.append("discountPrice", discountPrice);
+        newForm.append("stock", stock);
+        newForm.append("shopId", seller._id);
+        // dispatch(createProduct(newForm));
+        const config = {headers:{"content-type":"multipart/form-data"}}
+        axios.put(`${server}/product/update-product/${id}`,newForm,config).then((res)=>{
+            if(res.data.success === true)
+            {
+              toast.success(res.data.message);
+              navigate("/dashboard");
+              toast.success("Product updated successfully")
+            }
+            console.log(res.data.message);
+          }).catch((err)=>{
+            console.log(err.response.data.message);
+            toast.error(err.response.data.message);
+          })
+      };
+
+  return (
+    <>
+        {isLoading ? (
+            <Loader/>
+        ): (<div className="w-[90%] 800px:w-[50%] bg-white  shadow h-[80vh] rounded-[4px] p-3 overflow-y-scroll">
+            <h5 className='text-[30px] font-Poppins text-center'>
+                Create Product
+            </h5>
+            {/* Create Product form */}
+            <form onSubmit={handleSubmit}>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Name <span className='text-red-500'>*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name='name' 
+                        value={name} 
+                        onChange={(e)=>setName(e.target.value)} 
+                        className='mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        placeholder='Enter your product name ...'
+                        />
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Description <span className='text-red-500'>*</span>
+                    </label>
+                    <textarea 
+                        cols='30'
+                        rows='8'
+                        type="text" 
+                        name='description' 
+                        value={description} 
+                        onChange={(e)=>setDescription(e.target.value)} 
+                        className='mt-2 appearance-none block w-full px-3 h-[125px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        placeholder='Enter your product description ...'>
+                    </textarea>
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Category <span className='text-red-500'>*</span>
+                    </label>
+                    <select className='w-full mt-2 border h-[35px] rounded-[5px]'
+                    value={category}
+                    onChange={(e)=>setCategory(e.target.value)}
+                    >
+                        <option value="Choose a Category">Choose a Category</option>
+                        {
+                            categoriesData && categoriesData.map((i) => (
+                                <option value={i.title} key={i.title}>{i.title}</option>
+                            ))
+                        }
+                    </select>
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Tags <span className='text-red-500'>*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name='tags' 
+                        value={tags} 
+                        onChange={(e)=>setTags(e.target.value)} 
+                        className='mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        placeholder='Enter your product tags ...'
+                        />
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Orignal Price 
+                    </label>
+                    <input 
+                        type="number" 
+                        name='price' 
+                        value={orignalPrice} 
+                        onChange={(e)=>setOrignalPrice(e.target.value)} 
+                        className='mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        placeholder='Enter your orignal price ...'
+                        />
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Price (Discount Price) <span className='text-red-500'>*</span>
+                    </label>
+                    <input 
+                        type="number" 
+                        name='discountPrice' 
+                        value={discountPrice} 
+                        onChange={(e)=>setDiscountPrice(e.target.value)} 
+                        className='mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        placeholder='Enter your discount price ...'
+                        />
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                        Product Stock <span className='text-red-500'>*</span>
+                    </label>
+                    <input 
+                        type="number" 
+                        name='stock' 
+                        value={stock} 
+                        onChange={(e)=>setStock(e.target.value)} 
+                        className='mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        placeholder='Enter your stock ...'
+                        />
+                </div>
+                <br />
+                <div>
+                    <label className='pb-2'>
+                       Upload Images <span className='text-red-500'>*</span>
+                    </label>
+                    <input type="file"
+                    name=''
+                    id='upload'
+                    className='hidden'
+                    multiple
+                    onChange={handleImageChange} />
+                    <br />
+                    <div className="w-full flex items-center flex-wrap">
+                        <label htmlFor="upload">
+                            <AiOutlinePlusCircle size={30} className='mt-3 cursor-pointer' color='#555'/>
+                        </label>
+                        {
+                            images && images.map((i)=>(
+                                <img src={URL.createObjectURL(i)} key={i} alt=""
+                                className='h-[120px] w-[120px] object-cover m-2' />
+                            ))
+                        }
+                    </div>
+                    <br />
+                    <div>
+                        <input type="submit" value="Create" 
+                         className='mt-2 appearance-none block w-full px-3 h-[35px] border bg-[#fa7e19] text-[#fff] border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 sm:text-sm'
+                        />
+                    </div>
+                </div>
+            </form>
+        </div>)}
+    </>
+  )
+}
+
+export default UpdateOrder
